@@ -12,6 +12,7 @@
     },
     "chat.promptFilesLocations": {
         "../projects/my-agents/general/prompts": true,
+        "../projects/my-agents/julia/prompts": true,
     },
     "chat.instructionsFilesLocations": {
         "../projects/my-agents/shell/instructions": true,
