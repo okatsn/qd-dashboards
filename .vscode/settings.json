@@ -7,7 +7,7 @@
     "chat.agentFilesLocations": {
         ".github/agents": true,
         "../projects/my-agents/general/agents": true,
-        "../projects/my-agents/typst/agents": true,
+        "../projects/my-agents/dvc/agents": true,
         "../projects/my-agents/julia/agents": true,
     },
     "chat.promptFilesLocations": {
