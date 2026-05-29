@@ -1,159 +1,190 @@
 ---
-toc: false
-title: Double IQD Exploration Dashboard
+html_modules: true
+style: custom.css
 ---
 
-# Double IQD Core Diagnostics
+# 🌐 Double IQD Experiment Analysis Matrix
 
-<!-- Referring https://gemini.google.com/app/3c752cb65ef9704d -->
+Welcome to the **Double IQD (Interval-Quality-based Detrending)** interactive exploration dashboard. This interface enables real-world scientific exploration of geometric and density modeling configurations.
 
-<div class="card grid grid-cols-4" style="gap: 1.5rem; background-color: #f8f9fa; padding: 1.2rem;">
-  <div>
-    <label style="font-weight: bold; display: block; margin-bottom: 0.5rem;">Grid Resolution (dx = d_depth)</label>
-    ${dx_input}
+Using **Apache Arrow** and **Arquero**, we achieve instant client-sided query execution and extremely high-performance rendering directly from our pre-processed, ZSTD-compressed data partitions.
+
+---
+
+<div class="card controls-card">
+  <div class="control-group">
+    <label for="windowSize">🔍 Window Size (km)</label>
+    <div>${viewWindowSize}</div>
   </div>
-  <div>
-    <label style="font-weight: bold; display: block; margin-bottom: 0.5rem;">Window Size (w_x = w_depth)</label>
-    ${wx_input}
+  <div class="control-group">
+    <label for="baseline">⚖️ Detrending Baseline Model</label>
+    <div>${viewBaseline}</div>
   </div>
-  <div>
-    <label style="font-weight: bold; display: block; margin-bottom: 0.5rem;">Integration Baseline</label>
-    ${baseline_input}
+  <div class="control-group">
+    <label>📊 Window Ratio</label>
+    <div style="padding-top: 5px; font-weight: bold; color: var(--theme-foreground-muted, #718096);">5 (Fixed)</div>
   </div>
-  <div style="display: flex; align-items: flex-end; justify-content: flex-end;">
-    <div style="font-size: 0.85rem; color: #666; text-align: right;">
-      <strong>Selected Experiment Tag:</strong><br>
-      <code style="color: #d63384; font-size: 1rem;">${experiment_tag}</code>
+</div>
+
+```javascript
+// Define interactive inputs
+const viewWindowSize = Inputs.select([10.0, 20.0], {value: 10.0, format: d => `${d.toFixed(1)} km`});
+const viewBaseline = Inputs.select(["MeanMatchedBaseline", "ZeroBaseline"], {value: "MeanMatchedBaseline", label: ""});
+
+// Obtain reactive values
+const windowSize = Generators.input(viewWindowSize);
+const baseline = Generators.input(viewBaseline);
+```
+
+---
+
+```javascript
+// Import explicit high-performance Arrow IPC tables parsing engine
+import * as Arrow from "npm:apache-arrow";
+import * as aq from "npm:arquero";
+
+// Statically pre-loaded paths mapped as FileAttachments
+const attachments = {
+  "10.0_5_ZeroBaseline_density": FileAttachment("data/double_iqd/window_size=10.0/ws_ratio=5/baseline=ZeroBaseline/density_xz.arrow"),
+  "10.0_5_ZeroBaseline_ql": FileAttachment("data/double_iqd/window_size=10.0/ws_ratio=5/baseline=ZeroBaseline/ql_xz.arrow"),
+
+  "10.0_5_MeanMatchedBaseline_density": FileAttachment("data/double_iqd/window_size=10.0/ws_ratio=5/baseline=MeanMatchedBaseline/density_xz.arrow"),
+  "10.0_5_MeanMatchedBaseline_ql": FileAttachment("data/double_iqd/window_size=10.0/ws_ratio=5/baseline=MeanMatchedBaseline/ql_xz.arrow"),
+  "10.0_5_MeanMatchedBaseline_profile_x": FileAttachment("data/double_iqd/window_size=10.0/ws_ratio=5/baseline=MeanMatchedBaseline/profile_x.arrow"),
+  "10.0_5_MeanMatchedBaseline_profile_depth": FileAttachment("data/double_iqd/window_size=10.0/ws_ratio=5/baseline=MeanMatchedBaseline/profile_depth.arrow"),
+
+  "20.0_5_ZeroBaseline_density": FileAttachment("data/double_iqd/window_size=20.0/ws_ratio=5/baseline=ZeroBaseline/density_xz.arrow"),
+  "20.0_5_ZeroBaseline_ql": FileAttachment("data/double_iqd/window_size=20.0/ws_ratio=5/baseline=ZeroBaseline/ql_xz.arrow"),
+
+  "20.0_5_MeanMatchedBaseline_density": FileAttachment("data/double_iqd/window_size=20.0/ws_ratio=5/baseline=MeanMatchedBaseline/density_xz.arrow"),
+  "20.0_5_MeanMatchedBaseline_ql": FileAttachment("data/double_iqd/window_size=20.0/ws_ratio=5/baseline=MeanMatchedBaseline/ql_xz.arrow"),
+  "20.0_5_MeanMatchedBaseline_profile_x": FileAttachment("data/double_iqd/window_size=20.0/ws_ratio=5/baseline=MeanMatchedBaseline/profile_x.arrow"),
+  "20.0_5_MeanMatchedBaseline_profile_depth": FileAttachment("data/double_iqd/window_size=20.0/ws_ratio=5/baseline=MeanMatchedBaseline/profile_depth.arrow")
+};
+
+// Generic pipeline to fetch, parse, and convert to plain Javascript objects
+async function loadAndOptimize(attachment) {
+  if (!attachment) return [];
+  const buffer = await attachment.arrayBuffer();
+  const table = Arrow.tableFromIPC(new Uint8Array(buffer));
+  return aq.fromArrow(table).objects();
+}
+```
+
+```javascript
+// Reactively load current selection
+const densityData = loadAndOptimize(attachments[`${windowSize.toFixed(1)}_5_${baseline}_density`]);
+const qlData = loadAndOptimize(attachments[`${windowSize.toFixed(1)}_5_${baseline}_ql`]);
+
+// Conditionally load profile data based on baseline selection
+const profileXData = baseline === "MeanMatchedBaseline"
+  ? loadAndOptimize(attachments[`${windowSize.toFixed(1)}_5_MeanMatchedBaseline_profile_x`])
+  : Promise.resolve([]);
+
+const profileDepthData = baseline === "MeanMatchedBaseline"
+  ? loadAndOptimize(attachments[`${windowSize.toFixed(1)}_5_MeanMatchedBaseline_profile_depth`])
+  : Promise.resolve([]);
+```
+
+## 🗺️ 2D Vertical Slice Field Models
+
+The graphs below display the 2D cross-section ($X$-$Z$ space) of the experimental environment. Scroll over the plots to investigate exact coordinates and continuous numerical values.
+
+<div class="grid-cols-2">
+  <div class="card">
+    <h3>🌋 Density ($g / cm^3$) Field Distribution</h3>
+    <p class="muted">Visualizes vertical distribution of earth density. X-axis specifies position, Y-axis represents depth (increasing downwards).</p>
+    <div>
+      ${resize((width) => Plot.plot({
+        width: Math.max(400, width),
+        height: 380,
+        color: { scheme: "turbo", legend: true, label: "Density (g/cm³)" },
+        x: { label: "X Coordinates (km)" },
+        y: { reverse: true, label: "Depth (km)" },
+        marks: [
+          Plot.cell(densityData, { x: "x_km", y: "depth_km", fill: "value", tip: true })
+        ]
+      }))}
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>⚡ Ql (Quality Factor Interval) Energy Field Map</h3>
+    <p class="muted">Visualizes the computed attenuation profile (inverted quality factor metric) in $X$-$Z$ dimensional space.</p>
+    <div>
+      ${resize((width) => Plot.plot({
+        width: Math.max(400, width),
+        height: 380,
+        color: { scheme: "warm", legend: true, label: "Ql Metric" },
+        x: { label: "X Coordinates (km)" },
+        y: { reverse: true, label: "Depth (km)" },
+        marks: [
+          Plot.cell(qlData, { x: "x_km", y: "depth_km", fill: "value", tip: true })
+        ]
+      }))}
     </div>
   </div>
 </div>
 
 ---
 
-${loading_indicator}
+## 📐 1D Boundary Boundary Profiles
 
-<div class="grid grid-cols-2" style="margin-top: 1rem;">
-  <div class="card">
-    <h2>Event Density</h2>
-    ${plot_density}
-  </div>
-  <div class="card">
-    <h2>Quasi-Laplacian (QL) Field</h2>
-    ${plot_ql}
-  </div>
+1D boundary profiles map horizontal and vertical sections across specific detrending baselines, detailing discrete trends on coordinate borders.
+
+<div>
+  ${
+    baseline === "MeanMatchedBaseline"
+    ? html`
+      <div class="grid-cols-2">
+        <div class="card">
+          <h4>📉 Profile X (Across Depth)</h4>
+          <p class="muted">Vertical boundary values ($value$ vs. $depth\_km$). Plotted vertically with reversed Y-axis to mirror deep geophysical structures.</p>
+          <div>
+            ${resize((width) => Plot.plot({
+              width: Math.max(400, width),
+              height: 350,
+              x: { label: "Value" },
+              y: { reverse: true, label: "Depth (km)" },
+              marks: [
+                Plot.lineY(profileXData, { y: "depth_km", x: "value", stroke: "#2b6cb0", strokeWidth: 2 }),
+                Plot.dot(profileXData, { y: "depth_km", x: "value", fill: "#2b6cb0", r: 2.5, tip: true })
+              ]
+            }))}
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>📈 Profile Depth (Across X-Position)</h4>
+          <p class="muted">Horizontal profile slice ($value$ along $x\_km$). Illustrates surface matching trends along the longitudinal coordinate.</p>
+          <div>
+            ${resize((width) => Plot.plot({
+              width: Math.max(400, width),
+              height: 350,
+              x: { label: "X Coordinate (km)" },
+              y: { label: "Profile Value" },
+              marks: [
+                Plot.areaY(profileDepthData, { x: "x_km", y: "value", fill: "#319795", fillOpacity: 0.15 }),
+                Plot.lineY(profileDepthData, { x: "x_km", y: "value", stroke: "#319795", strokeWidth: 2 }),
+                Plot.dot(profileDepthData, { x: "x_km", y: "value", fill: "#319795", r: 2.5, tip: true })
+              ]
+            }))}
+          </div>
+        </div>
+      </div>
+    `
+    : html`
+      <div class="card info-banner">
+        <strong>⚠️ Profiles Unavailable</strong>
+        <p style="margin: 0.5rem 0 0 0; color: #4a5568;">
+          The <strong>ZeroBaseline</strong> model applies a zero-field assumption on outer boundaries, removing matching boundary metrics. Therefore, 1D Profiles do not exist for this detrending configuration.
+          To explore horizontal and vertical boundary slices, please select <strong>MeanMatchedBaseline</strong> in the control panel.
+        </p>
+      </div>
+    `
+  }
 </div>
 
-```js
-// --- PARAMETER RESOLUTION & STATE MANAGEMENT ---
-// Read discrete options configured across the experiments matrix
-const dx_input = Inputs.select([5.0, 2.5, 1.0, 0.4, 0.2], {value: 2.5, format: d => `${d} km`});
-const wx_input = Inputs.select([10.0, 5.0, 2.0, 1.0], {value: 10.0, format: w => `${w} km`});
-const baseline_input = Inputs.radio(["ZeroBaseline", "MeanMatchedBaseline"], {value: "ZeroBaseline"});
 
-const dx = Generators.observe(dx_input);
-const wx = Generators.observe(wx_input);
-const baseline = Generators.observe(baseline_input);
-
-// Map slider coordinates back to your explicit experiment tag schema
-const experiment_tag = cal_tag(dx, wx, baseline);
-
-function cal_tag(dx, wx, baseline) {
-  const isMean = baseline === "MeanMatchedBaseline";
-  if (dx === 5.0 && wx === 10.0) return isMean ? "mean_matched_base" : "zero_base";
-  if (dx === 2.5 && wx === 10.0) return isMean ? "mean_matched_fine" : "zero_fine";
-  if (dx === 1.0 && wx === 5.0)  return "zero_finer_w5";
-  if (dx === 0.4 && wx === 2.0)  return "zero_finer_w2";
-  if (dx === 0.2 && wx === 1.0)  return "zero_finer_w1";
-  return "UNKNOWN_COMBINATION";
-}
-
-// --- ASYNC BINARY DATA LOADER ---
-// Dynamically fetches individual files over the network based on UI state
-const data = html`<span></span>`; // Reactive trigger hook
-
-const records = div(async () => {
-  if (experiment_tag === "UNKNOWN_COMBINATION") {
-    return { error: true, msg: "The alignment constraint/combination does not match any precomputed sequence." };
-  }
-
-  try {
-    const url = `./data/exp_${experiment_tag}.arrow`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("File missing or unaligned resource.");
-
-    // Parse using framework's standard internal Apache Arrow pipeline
-    const arrowTable = await response.arrow();
-    return { error: false, table: arrowTable };
-  } catch (err) {
-    return { error: true, msg: `Missing asset target for: ${experiment_tag}. Run export pipeline.` };
-  }
-});
-
-// UI helper to present error/loading notification states safely
-const loading_indicator = html`${() => {
-  if (!records) return html`<div style="color: #ffc107; font-weight: bold;">⏳ Loading Columnar Layer Assets...</div>`;
-  if (records.error) return html`<div style="color: #dc3545; padding: 1rem; border: 1px dashed red;">⚠️ ${records.msg}</div>`;
-  return html`<div style="color: #28a745; font-size: 0.85rem;">✓ Matrix points parsed. Performance rendering pipeline active.</div>`;
-}}`;
-
-
-// Javascripts
-```js
-// --- HIGH INDEPENDENT PERFORMANCE VISUALIZATIONS ---
-const plot_density = html`${() => {
-  if (!records || records.error) return html`<div>No active data map trace.</div>`;
-
-  const t = records.table;
-  return Plot.plot({
-    height: 480,
-    grid: true,
-    y: { reverse: true, label: "Depth (km)" },
-    x: { label: "Position X Axis (km)" },
-    color: { scheme: "viridis", label: "Density Value", legend: true },
-    marks: [
-      Plot.raster(t, {
-        x: "x_km",
-        y: "depth_km",
-        fill: "density",
-        interpolate: "nearest"
-      })
-    ]
-  });
-}}`;
-
-const plot_ql = html`${() => {
-  if (!records || records.error) return html`<div>No active data map trace.</div>`;
-
-  const t = records.table;
-
-  // Dynamic symetrical bounds computation for the divergent colormap
-  const qlValues = t.getChild("ql").toArray();
-  let maxAbs = 0;
-  for (let i = 0; i < qlValues.length; i++) {
-    const absV = Math.abs(qlValues[i]);
-    if (absV > maxAbs) maxAbs = absV;
-  }
-
-  return Plot.plot({
-    height: 480,
-    grid: true,
-    y: { reverse: true, label: "Depth (km)" },
-    x: { label: "Position X Axis (km)" },
-    color: {
-      type: "diverging",
-      scheme: "RdBu",
-      domain: [-maxAbs, maxAbs],
-      label: "QL Signature Amplitude",
-      legend: true
-    },
-    marks: [
-      Plot.raster(t, {
-        x: "x_km",
-        y: "depth_km",
-        fill: "ql",
-        interpolate: "nearest"
-      })
-    ]
-  });
-}}`;
-```
+// Define relative configuration base paths pointing to your deployed DVC assets
+const DATA_BASE_URL = "data/double_iqd";

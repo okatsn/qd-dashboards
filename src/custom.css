@@ -1,0 +1,52 @@
+/* CSS Grid Layout for Double IQD Dashboard */
+
+.grid-cols-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+    .grid-cols-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.card {
+    background: var(--theme-background-alt, #fafafa);
+    border: 1px solid var(--theme-border, #e3e3e3);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+}
+
+.controls-card {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2rem;
+    align-items: center;
+    background: var(--theme-background-alt, #f0f4f8);
+    border: 1px solid var(--theme-border, #d0daf0);
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-group label {
+    font-weight: 600;
+    color: var(--theme-foreground-focus, #1a202c);
+    font-size: 0.875rem;
+}
+
+.info-banner {
+    background-color: #f7fafc;
+    border-left: 4px solid #cbd5e0;
+    padding: 1rem;
+    border-radius: 0 4px 4px 0;
+    margin-top: 1rem;
+}
