@@ -1,0 +1,7 @@
+{
+    "devcontainer_name": "QDDashboards",
+    "service": "devqddb",
+    "image": "qddb",
+    "docker_compose_name": "qd-dashboards",
+    "dind": false
+}
