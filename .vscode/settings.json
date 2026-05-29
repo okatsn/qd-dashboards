@@ -8,12 +8,14 @@
         ".github/agents": true,
         "../projects/my-agents/general/agents": true,
         "../projects/my-agents/typst/agents": true,
+        "../projects/my-agents/julia/agents": true,
     },
     "chat.promptFilesLocations": {
         "../projects/my-agents/general/prompts": true,
     },
     "chat.instructionsFilesLocations": {
         "../projects/my-agents/shell/instructions": true,
+        "../projects/my-agents/julia/instructions": true,
     },
     "chat.agentSkillsLocations": {
         ".github/skills": true,
