@@ -1,0 +1,8 @@
+# params.yaml
+# -----------------------------------------------------------------
+# Global Configuration Configuration
+# -----------------------------------------------------------------
+config:
+  data_root: "prepare-data/data" # Root folder for real experiment data inputs. Toggle to "prepare-data/fake-data" to validate synthetic environments.
+  dashboard_root: "src" # Static source directory containing dashboard pages, styles and components for Observable Framework.
+  dist_dir: "dist" # Output target deployment directory generated after running Observable Framework production build compiler.

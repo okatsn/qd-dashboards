@@ -1,0 +1,68 @@
+# dvc.yaml
+# ============================================================================
+# DVC Pipeline Stage Definitions for Double IQD Experiment Analysis Workspace
+# ============================================================================
+
+vars:
+  - params.yaml # Import parameters definitions for environment-wide settings
+
+stages:
+  # -----------------------------------------------------------------
+  # Stage 1: Discretized Slicing & IPC Table Compression
+  # -----------------------------------------------------------------
+  export_slices:
+    desc: >-
+      Crawls raw double-iqd multi-dimensional experiments result matrix,
+      validates strict column layouts, and compresses subsets into structured
+      Hive-style partitioned Apache Arrow files with ZSTD compression.
+    cmd: julia --project=prepare-data prepare-data/scripts/export_observable.jl
+    deps:
+      - ${config.data_root}/double-iqd/double_iqd
+      # (DRY: Initial data schema specified only in the first stage / raw inputs)
+      # Raw Columns under source parquet/arrow files:
+      # - `:x_km::Float64` — Horizontal boundary distance (km)
+      # - `:depth_km::Float64` — Vertical depth from center/surface (km)
+      # - `:value::Float64` — Modeled scalar parameter value
+      - prepare-data/scripts/export_observable.jl
+    params:
+      - config.data_root
+      - config.dashboard_root
+    outs:
+      - ${config.dashboard_root}/data/double_iqd:
+          cache: true
+      # Partitioning: Hive-style layout
+      # Output format:
+      #   ${config.dashboard_root}/data/double_iqd/window_size=<w_val>/ws_ratio=<r_val>/baseline=<b_val>/<filename>.arrow
+      # Validated exported columns (matching plain Arrow structures):
+      # For density_xz.arrow and ql_xz.arrow:
+      # - `:x_km::Float64` — Surface distance coordinate (km)
+      # - `:depth_km::Float64` — Vertical depth coordinate (km)
+      # - `:value::Float64` — Associated numerical grid data value
+      # For profile_x.arrow (only exported with baseline = "MeanMatchedBaseline"):
+      # - `:depth_km::Float64` — Grid slice depth line coordinate (km)
+      # - `:value::Float64` — Boundary matched horizontal offset values
+      # For profile_depth.arrow (only exported with baseline = "MeanMatchedBaseline"):
+      # - `:x_km::Float64` — Boundary matched vertical grid coordinate (km)
+      # - `:value::Float64` — Slice boundary surface values
+
+  # -----------------------------------------------------------------
+  # Stage 2: Observable Framework Static Production Compile
+  # -----------------------------------------------------------------
+  build_dashboard:
+    desc: >-
+      Takes verified data assets, UI configurations, stylesheets, and the Markdown index
+      to compile a robust, optimized, client-side static web application deployment under dist.
+    cmd: npm run build
+    deps:
+      - ${config.dashboard_root}/data/double_iqd
+      - ${config.dashboard_root}/index.md
+      - ${config.dashboard_root}/custom.css
+      - package.json
+      - package-lock.json
+      - observablehq.config.js
+    params:
+      - config.dashboard_root
+      - config.dist_dir
+    outs:
+      - ${config.dist_dir}:
+          cache: false
